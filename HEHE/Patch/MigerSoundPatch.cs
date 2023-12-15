@@ -1,22 +1,27 @@
-﻿using BepInEx;
-using BepInEx.Logging;
+﻿using BepInEx.Logging;
+using BepInEx;
 using HarmonyLib;
 using System;
 using System.Collections;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine.Networking;
-
+using UnityEngine;
+using GameNetcodeStuff;
+using System.Security.Policy;
+using System.Threading;
 
 namespace HEHE.Patch
 {
-    [HarmonyPatch(typeof(FlowermanAI))]
-    internal class HeheSound
+    [HarmonyPatch(typeof(PlayerControllerB))]
+    internal class MigerSound
     {
-        public static FlowermanAI flowerMan;
-        static bool done = false;
+        static bool lookingToFlowerMan = false;
         static AudioClip newSFX;
         static ManualLogSource mls;
-        
+
         [HarmonyPatch("Start")]
         [HarmonyPostfix]
         static void prepareAudio()
@@ -26,7 +31,7 @@ namespace HEHE.Patch
             string location = ((BaseUnityPlugin)HeheBase.instance).Info.Location;
             string text = "HEHE.dll";
             string text2 = location.TrimEnd(text.ToCharArray());
-            string path = text2 + "HEHE.wav";
+            string path = text2 + "Miger.wav";
             ((MonoBehaviour)HeheBase.instance).StartCoroutine(LoadAudio("file:///" + path, clip =>
             {
                 newSFX = clip;
@@ -61,22 +66,31 @@ namespace HEHE.Patch
 
         [HarmonyPatch("Update")]
         [HarmonyPostfix]
-        static void FlowerManAudioKillPatch(ref FlowermanAI __instance)
+        static void migerSoundPatch(ref PlayerControllerB __instance)
         {
-            flowerMan = __instance;
-            if (flowerMan.inKillAnimation && !done)
+            if(HeheSound.flowerMan != null)
             {
-                done = true;
-                AudioSource audioSource = flowerMan.gameObject.AddComponent<AudioSource>();
-                audioSource.clip = newSFX;
-                audioSource.Play();
-                mls.LogInfo("The FlowerMan got someone HEHE");
+                Vector3 flowerManPosition = new Vector3();
+                PlayerControllerB playerRef = __instance;
+                if (playerRef.HasLineOfSightToPosition(HeheSound.flowerMan.serverPosition) && !lookingToFlowerMan)
+                {
+                    lookingToFlowerMan = true;
+                    flowerManPosition = HeheSound.flowerMan.serverPosition;
+                }
+                if(playerRef.HasLineOfSightToPosition(flowerManPosition) && flowerManPosition != null)
+                {    
+                    AudioSource audioSource = playerRef.gameObject.AddComponent<AudioSource>();
+                    audioSource.clip = newSFX;
+                    audioSource.Play();
+                    mls.LogInfo("Someone saw a Flowerman what a scary incident, its time to hide ;)");
+                }
+                else if(!playerRef.HasLineOfSightToPosition(flowerManPosition) && flowerManPosition != null)
+                {
+                    lookingToFlowerMan = false;
+                }
             }
-            if (!flowerMan.inKillAnimation)
-            {
-                done = false;
-            }
+            
         }
-        
+
     }
 }

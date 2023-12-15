@@ -27,10 +27,11 @@ namespace HEHE
                 instance = this;
             }
             mls = BepInEx.Logging.Logger.CreateLogSource(modGUID);
-            mls.LogInfo("Lecre.ConchaSuMareMod is loading");
+            mls.LogInfo("Lecre.HEHEMod is loading");
 
             harmony.PatchAll(typeof(HeheBase));
             harmony.PatchAll(typeof(HeheSound));
+            harmony.PatchAll(typeof(MigerSound));
         }
 
     }
