@@ -3,15 +3,9 @@ using BepInEx;
 using HarmonyLib;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine.Networking;
 using UnityEngine;
 using GameNetcodeStuff;
-using System.Security.Policy;
-using System.Threading;
 
 namespace HEHE.Patch
 {
@@ -21,6 +15,7 @@ namespace HEHE.Patch
         static bool lookingToFlowerMan = false;
         static AudioClip newSFX;
         static ManualLogSource mls;
+        static Vector3 flowerManPositionLastSaw = new Vector3();
 
         [HarmonyPatch("Start")]
         [HarmonyPostfix]
@@ -68,29 +63,35 @@ namespace HEHE.Patch
         [HarmonyPostfix]
         static void migerSoundPatch(ref PlayerControllerB __instance)
         {
-            if(HeheSound.flowerMan != null)
+
+            if (HeheSound.flowerMan != null)
             {
-                Vector3 flowerManPosition = new Vector3();
+                FlowermanAI flowerman = HeheSound.flowerMan;
+                Vector3 flowerManPosition = flowerman.serverPosition;
                 PlayerControllerB playerRef = __instance;
-                if (playerRef.HasLineOfSightToPosition(HeheSound.flowerMan.serverPosition) && !lookingToFlowerMan)
+                bool reproduced = false;
+
+                if (playerRef.HasLineOfSightToPosition(flowerManPosition) && !lookingToFlowerMan)
                 {
+                    flowerManPositionLastSaw = flowerManPosition;
                     lookingToFlowerMan = true;
-                    flowerManPosition = HeheSound.flowerMan.serverPosition;
                 }
-                if(playerRef.HasLineOfSightToPosition(flowerManPosition) && flowerManPosition != null)
-                {    
+                else if (lookingToFlowerMan && playerRef.HasLineOfSightToPosition(flowerManPositionLastSaw) && !reproduced)
+                {
+                    reproduced = true;
                     AudioSource audioSource = playerRef.gameObject.AddComponent<AudioSource>();
                     audioSource.clip = newSFX;
                     audioSource.Play();
-                    mls.LogInfo("Someone saw a Flowerman what a scary incident, its time to hide ;)");
+                    mls.LogInfo("El jugador ha perdido la visión del Flowerman, es hora de esconderse ;)");
                 }
-                else if(!playerRef.HasLineOfSightToPosition(flowerManPosition) && flowerManPosition != null)
+
+                if (!playerRef.HasLineOfSightToPosition(flowerManPosition))
                 {
                     lookingToFlowerMan = false;
+                    reproduced = false;
                 }
             }
-            
-        }
 
+        }
     }
 }
