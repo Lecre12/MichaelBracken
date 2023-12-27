@@ -83,9 +83,11 @@ namespace HEHE.Patch
         {
             if (__instance.inKillAnimation && killingFlowerMan == null)
             {
+                float soundRadius = 100f;
                 killingFlowerMan = __instance;
                 AudioSource audioSource = __instance.gameObject.AddComponent<AudioSource>();
                 audioSource.clip = newSFX;
+                audioSource.maxDistance = soundRadius;
                 audioSource.Play();
                 mls.LogInfo("The Bracken got someone HEHE");
             }
